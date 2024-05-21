@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using Frontend.Data
+@using Microsoft.EntityFrameworkCore
 @using WebApp.Filters
 
 @inject UserManager<ApplicationUser> UserManager
@@ -19,23 +20,20 @@
 <section class="signup">
     <div class="container">
 
-        @if (!string.IsNullOrEmpty(ViewData["StatusMessage"]?.ToString()))
+        @if (!string.IsNullOrEmpty(ErrorMessage))
         {
             <div class="alert alert-danger">
-                @ViewData["StatusMessage"]
+                @ErrorMessage
             </div>
         }
 
         <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="signup" novalidate>
             <DataAnnotationsValidator />
-            <AntiforgeryToken />
+            
             <h1>Create Account</h1>
             <p>Already have an account? <a href="/signin">Sign in here</a>.</p>
 
             <div class="form-content">
-
-             
-
 
                 <div id="form-firstname" class="input-group">
                     <div class="text-flex">
@@ -46,42 +44,44 @@
 
                 </div>
 
-
                 <div id="form-lastname" class="input-group">
                     <div class="text-flex">
-                        <label asp-for="LastName"></label>
-                        <span asp-validation-for="LastName"></span>
+                        <label>Last name</label>
+                        <ValidationMessage For="() => Input.LastName" />
                     </div>
-                    <input asp-for="LastName">
+                    <InputText @bind-Value="Input.LastName" class="form-control" autocomplete="surname" aria-required="true" placeholder="Enter your last name" />
                 </div>
+
                 <div id="form-email" class="input-group">
                     <div class="text-flex">
-                        <label asp-for="Email"></label>
-                        <span asp-validation-for="Email"></span>
+                        <label>Email</label>
+                        <ValidationMessage For="() => Input.Email" />
                     </div>
-                    <input asp-for="Email">
+                    <InputText type="email" @bind-Value="Input.Email" class="form-control" autocomplete="email" aria-required="true" placeholder="Enter your email" />
                 </div>
+
                 <div id="form-password" class="input-group">
                     <div class="text-flex">
-                        <label asp-for="Password"></label>
-                        <span asp-validation-for="Password"></span>
+                        <label>Password</label>
+                        <ValidationMessage For="() => Input.Password" />
                     </div>
-                    <input asp-for="Password">
+                    <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="password" aria-required="true" placeholder="Enter your password" />
                 </div>
+
                 <div id="form-confirmpassword" class="input-group">
                     <div class="text-flex">
-                        <label asp-for="ConfirmPassword"></label>
-                        <span asp-validation-for="ConfirmPassword"></span>
+                        <label>Confirm Password</label>
+                        <ValidationMessage For="() => Input.ConfirmPassword" />
                     </div>
-                    <input asp-for="ConfirmPassword">
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="confirm" aria-required="true" />
                 </div>
 
                 <div id="form-checkbox" class="checkbox-group">
-                    <div id="input-group">
-                        <input asp-for="TermsAndConditions">
-                        <label asp-for="TermsAndConditions"></label>
+                    <div class="text-flex">
+                        <InputCheckbox type="password" @bind-Value="Input.TermsAndConditions" class="form-control" autocomplete="terms" aria-required="true" placeholder="Confirm your password" />
+                        <label>I accept the Terms and conditions</label>
                     </div>
-                    <span asp-validation-for="TermsAndConditions"></span>
+                    <ValidationMessage For="() => Input.TermsAndConditions" />
                 </div>
                 <div id="form-button">
                     <button class="btn btn-theme" type="submit"><i class="fa-regular fa-arrow-left-to-bracket"></i>Sign up</button>
@@ -101,6 +101,7 @@
 
 @code {
 
+    private string? ErrorMessage { get; set; }
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
@@ -112,24 +113,33 @@
     public async Task RegisterUser(EditContext editContext)
     {
 
-        var user = new ApplicationUser { UserName = Input.Email, Email = Input.Email };
+        var user = new ApplicationUser
+        {
+            FirstName = Input.FirstName,
+            LastName = Input.LastName,
+            UserName = Input.Email, 
+            Email = Input.Email 
+        };
+
+        if (await UserManager.Users.AnyAsync(x => x.Email == user.Email))
+        {
+            ErrorMessage = "Email is alreay in use!";
+            return;
+
+        }
 
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
-        { 
-            return; 
-        }
-
-
-
-
-
+            return;
+        
+    
+        
 
 
         if (UserManager.Options.SignIn.RequireConfirmedAccount)
         {
-            NavigationManager.NavigateTo($"/Confirm?=email={user.Email}");
+            NavigationManager.NavigateTo($"/confirm?email={user.Email}");
         }
 
         await SignInManager.SignInAsync(user, isPersistent: false);

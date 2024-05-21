@@ -541,7 +541,8 @@ form button {
   font-weight: 400 !important;
   width: 100%;
 }
-form .field-validation-error {
+form .field-validation-error,
+form .validation-message {
   font-size: 14px;
   font-weight: 400 !important;
   color: red;

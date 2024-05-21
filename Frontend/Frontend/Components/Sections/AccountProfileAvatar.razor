@@ -1,0 +1,121 @@
+﻿@attribute [StreamRendering]
+
+@rendermode InteractiveAuto
+
+@using System.Net.Http.Headers
+@if(user == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <section class="account-profile">
+        <div class="profile">
+            <div class="profile-image">
+                <img src="/images/uploads/profiles/@user.ProfileImage" alt="@user.FirstName @user.LastName" />
+
+                <EditForm Model="@uploadModel" OnValidSubmit="HandleProfileUpload">
+                    <InputFile id="fileUploader" OnChange="HandleFileSelected" hidden />
+                    <label for="fileUploader" class="btn btn-circle btn-circle-sm"><i class="fa-regular fa-refresh"></i></label>
+                </EditForm>
+            </div>
+            <div class="profile-info">
+                <h3 class="displayname">@user.FirstName @user.LastName</h3>
+                <p>@user.Email</p>
+            </div>
+            <div class="left-account-buttons">
+                <a class="btn btn-theme" href="/#">
+                    <img src="/images/icons/bx-cog.svg" alt="">
+                    <p> Account Details </p>
+                </a>
+            </div>
+            <div class="left-account-buttons">
+                <a class="btn btn-theme" href="/#">
+                    <img src="/images/icons/bx-lock-alt.svg" alt="">
+                    <p> Security </p>
+                </a>
+            </div>
+            <div class="left-account-buttons">
+                <a class="btn btn-theme" href="/#">
+                    <img src="/images/icons/bookmark.svg" alt="">
+                    <p> Saved Courses </p>
+                </a>
+            </div>
+            <div class="left-account-buttons">
+                <a href="/#" @onclick="HandleSignOut" class="btn btn-theme">
+                    <img src="/images/icons/bx-log-out.svg" alt="">
+                    <p> Sign Out</p>
+
+                </a>
+            </div>
+        </div>
+    </section>
+}
+
+
+
+
+@code {
+    private ApplicationUser user = default!;
+    private MultipartFormDataContent uploadModel = new MultipartFormDataContent();
+    private IBrowserFile? selectedFile;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserDataAsync();
+
+    }
+
+    public void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+
+    }
+
+
+    private async Task LoadUserDataAsync()
+    {
+        user = await UserManager.GetUserAsync(HttpContext.User) ?? null!;
+    }
+
+    private async Task HandleSignOut()
+    {
+        await SignInManager.SignOutAsync();
+    }
+
+
+    public async Task HandleProfileUpload()
+    {
+        if (selectedFile != null)
+        {
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
+            content.Add(fileContent, "file", selectedFile.Name);
+
+            try
+            {
+                var response = await Http.PostAsync("https://fileprovider-win23jsbackend-simoner.azurewebsites.net/api/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadUserDataAsync();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);            
+            }
+
+        }
+    }
+
+
+
+
+
+    
+}
