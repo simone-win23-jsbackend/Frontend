@@ -56,18 +56,20 @@ else
 
 
 @code {
-    private ApplicationUser user = default!;
+    [Parameter]
+    public ApplicationUser user { get; set; } = default!;
     private MultipartFormDataContent uploadModel = new MultipartFormDataContent();
     private IBrowserFile? selectedFile;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadUserDataAsync();
 
+    private async Task LoadUserDataAsync()
+    {
+        user = await UserManager.GetUserAsync(HttpContext.User) ?? null!;
     }
+
 
     public void HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -76,10 +78,6 @@ else
     }
 
 
-    private async Task LoadUserDataAsync()
-    {
-        user = await UserManager.GetUserAsync(HttpContext.User) ?? null!;
-    }
 
     private async Task HandleSignOut()
     {

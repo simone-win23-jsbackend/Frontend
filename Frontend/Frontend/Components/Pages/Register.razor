@@ -132,11 +132,9 @@
 
         if (!result.Succeeded)
             return;
-        
-    
-        
 
-
+      
+ 
         if (UserManager.Options.SignIn.RequireConfirmedAccount)
         {
             NavigationManager.NavigateTo($"/confirm?email={user.Email}");
