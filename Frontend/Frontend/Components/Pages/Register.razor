@@ -27,7 +27,7 @@
             </div>
         }
 
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="signup" novalidate>
+        <EditForm Model="Input"   OnValidSubmit="RegisterUser" FormName="signup" novalidate>
             <DataAnnotationsValidator />
             
             <h1>Create Account</h1>
@@ -87,6 +87,7 @@
                     <button class="btn btn-theme" type="submit"><i class="fa-regular fa-arrow-left-to-bracket"></i>Sign up</button>
                 </div>
             </div>
+           
         </EditForm>
 
     </div>
@@ -121,6 +122,7 @@
             Email = Input.Email 
         };
 
+
         if (await UserManager.Users.AnyAsync(x => x.Email == user.Email))
         {
             ErrorMessage = "Email is alreay in use!";
@@ -129,7 +131,7 @@
         }
 
         var result = await UserManager.CreateAsync(user, Input.Password);
-
+        Console.WriteLine(result);
         if (!result.Succeeded)
             return;
 
@@ -142,7 +144,12 @@
 
         await SignInManager.SignInAsync(user, isPersistent: false);
         NavigationManager.NavigateTo(ReturnUrl ?? "/");
+
+        
     }
+
+
+  
 
 
 
@@ -167,7 +174,7 @@
         public string Email { get; set; } = "";
 
         [Required]
-        [RegularExpression(@"(?!^[0-9]*$)(?!^[a-zA-Z]*$)^([a-zA-Z0-9]{8,})$", ErrorMessage = "Incorrect password format.")]
+        [RegularExpression("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", ErrorMessage = "Incorrect password format.")]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = "";

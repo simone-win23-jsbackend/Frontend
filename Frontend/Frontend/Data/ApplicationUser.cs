@@ -15,6 +15,7 @@ public class ApplicationUser : IdentityUser
     public string? ProfileImage { get; set; } = "avatar.jpg";
 
     public int? AddressId { get; set; }
+
     public AddressEntity? Address { get; set; }
 
 }
