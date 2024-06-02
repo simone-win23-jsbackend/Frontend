@@ -1,6 +1,7 @@
 ﻿@page "/courses"
+@using Frontend.Client.Models
 @attribute [StreamRendering]
-@attribute [Authorize]
+
 
 
 <PageTitle>Courses</PageTitle>
@@ -36,7 +37,7 @@
 
                         <button class="btn btn-circle bookmark"><i class="fa-regular fa-bookmark"></i> </button>
 
-                        <img src="~/images/courses/@course.Image" alt="@course.Title" />
+                        <img src="~/images/courses/@course.ImageUri" alt="@course.Title" />
 
                         <div class="content">
                             <h5 class="title">@course.Title</h5>
@@ -68,41 +69,65 @@
 </section>
 
 @code {
-    private CourseModel[]? courses;
+    private List<CourseModel>? courses;
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        var query = new GraphQlQuery { Query = "{getCourses { id isBestseller imageUri title authors {name} prices {price currency discount} hours likesInProcent likes}}" };
+        var response = await Http.PostAsJsonAsync("http://localhost:7037/api/graphql", query);
+
+        if (response.IsSuccessStatusCode)
         {
-            courses = await Http.GetFromJsonAsync<CourseModel[]>(Environment.GetEnvironmentVariable("COURSES_URI"));
+            var result = await response.Content.ReadFromJsonAsync<DynamicGraphQLResponse>();
+            courses = result?.Data.GetProperty("getCourses").EnumerateArray()
+                .Select(courses => new CourseModel
+                    {
+                        Id = courses.GetProperty("id").GetString(),
+                        IsBestseller = courses.GetProperty("isBestseller").GetBoolean(),
+                        ImageUri = courses.GetProperty("imageUri").GetString(),
+                        Title = courses.GetProperty("title").GetString(),
+                        Author = courses.GetProperty("authors").GetArrayLength() > 0
+                         ? courses.GetProperty("authors")[0].GetProperty("name").GetString()
+                         : "Unknown",
+                        Price = $"{courses.GetProperty("prices").GetProperty("currency").GetString()} {courses.GetProperty("prices").GetProperty("price").GetDouble()}",
+                        DiscountPrice = courses.GetProperty("prices").GetProperty("discount").GetDouble() > 0
+                        ? $"{courses.GetProperty("prices").GetProperty("currency").GetString()} {courses.GetProperty("prices").GetProperty("price").GetDouble() - courses.GetProperty("prices").GetProperty("discount").GetDouble()}"
+                        : null,
+                        Hours = courses.GetProperty("hours").ToString(),
+                        LikesInProcent = courses.GetProperty("likesInProcent").GetString(),
+                        LikesInNumbers = courses.GetProperty("likes").GetString()
 
+
+                    })
+                .ToList();
         }
-        catch (Exception ex) { }
-
     }
 
+
+  
 
     private class CourseModel
     {
-        public int Id { get; set; }
+        public string? Id { get; set; } = null!;
 
         public bool IsBestseller { get; set; }
 
-        public string Image { get; set; } = null!;
+        public string? ImageUri { get; set; } 
 
-        public string Title { get; set; } = null!;
+        public string? Title { get; set; }
 
-        public string Author { get; set; } = null!;
+        public string? Author { get; set; } = null!;
 
-        public string Price { get; set; } = null!;
+        public string? Price { get; set; } = null!;
 
         public string? DiscountPrice { get; set; }
 
-        public string Hours { get; set; } = null!;
+        public string? Hours { get; set; } = null!;
 
-        public string LikesInProcent { get; set; } = null!;
+        public string? LikesInProcent { get; set; } = null!;
 
-        public string LikesInNumbers { get; set; } = null!;
+        public string? LikesInNumbers { get; set; } = null!;
     }
+
 
 }
